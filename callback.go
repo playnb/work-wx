@@ -3,6 +3,7 @@ package work_wx
 import (
 	"encoding/base64"
 	"encoding/binary"
+	"encoding/xml"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"io/ioutil"
@@ -11,6 +12,12 @@ import (
 	"strconv"
 )
 
+type wxBody struct {
+	ToUserName string `xml:"ToUserName"`
+	AgentID    string `xml:"AgentID"`
+	Encrypt    string `xml:"Encrypt"`
+}
+
 type CallbackRequest struct {
 	signature string
 	nonce     string
@@ -18,6 +25,7 @@ type CallbackRequest struct {
 	RandomStr string
 	RawMsg    string
 	ReceiveID string
+	Body      *wxBody
 }
 
 func (req *CallbackRequest) parse(cb *Callback, c *gin.Context) bool {
@@ -43,7 +51,17 @@ func (req *CallbackRequest) parse(cb *Callback, c *gin.Context) bool {
 	} else {
 		defer c.Request.Body.Close()
 		data, _ := ioutil.ReadAll(c.Request.Body)
-		fmt.Println(string(data))
+
+		req.Body = &wxBody{}
+		xml.Unmarshal(data, req.Body)
+		src, _ := base64.StdEncoding.DecodeString(req.Body.Encrypt)
+		dst := AesDecryptCBC([]byte(src), cb.AESKey)
+		fmt.Println(dst)
+
+		req.RandomStr = string(dst[:16])
+		msgLen := binary.BigEndian.Uint32(dst[16:])
+		req.RawMsg = string(dst[20 : 20+msgLen])
+		req.ReceiveID = string(dst[20+msgLen:])
 	}
 	//消息体签名校验	{dev_msg_signature=sha1(sort(token、timestamp、nonce、msg_encrypt))}
 	//TODO:: 之后再实现
