@@ -19,6 +19,9 @@ type MessageRet struct {
 type Text struct {
 	Content string `json:"content"`
 }
+type Markdown struct {
+	Content string `json:"content"`
+}
 type Image struct {
 	MediaID string `json:"media_id"`
 }
@@ -55,6 +58,7 @@ type MessageData struct {
 	Safe    uint64 `json:"safe"`
 
 	Text     *Text     `json:"text,omitempty"`
+	Markdown *Markdown `json:"markdown,omitempty"`
 	Image    *Image    `json:"image,omitempty"`
 	Voice    *Voice    `json:"voice,omitempty"`
 	Video    *Video    `json:"video,omitempty"`
@@ -103,6 +107,16 @@ func (m *Message) ToTag(tags ...string) *Message {
 func (m *Message) Text(text *Text) *Message {
 	m.data.Text = text
 	m.data.MsgType = "text"
+	return m
+}
+func (m *Message) Markdown(md *Markdown) *Message {
+	m.data.Markdown = md
+	m.data.MsgType = "markdown"
+	return m
+}
+func (m *Message) TextCard(tc *TextCard) *Message {
+	m.data.TextCard = tc
+	m.data.MsgType = "textcard"
 	return m
 }
 
