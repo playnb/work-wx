@@ -26,6 +26,31 @@ type CallbackRequest struct {
 	RawMsg    string
 	ReceiveID string
 	Body      *wxBody
+	MapData   map[string]string
+}
+
+func (req *CallbackRequest) IsText() bool {
+	return req.GetMsgType() == "text"
+}
+
+func (req *CallbackRequest) GetContent() string {
+	if c, ok := req.MapData["Content"]; ok {
+		return c
+	}
+	return ""
+}
+func (req *CallbackRequest) GetAgentID() uint64 {
+	if c, ok := req.MapData["AgentID"]; ok {
+		aid, _ := strconv.ParseUint(c, 10, 64)
+		return aid
+	}
+	return 0
+}
+func (req *CallbackRequest) GetMsgType() string {
+	if c, ok := req.MapData["MsgType"]; ok {
+		return c
+	}
+	return ""
 }
 
 func (req *CallbackRequest) parse(cb *Callback, c *gin.Context) bool {
@@ -39,7 +64,9 @@ func (req *CallbackRequest) parse(cb *Callback, c *gin.Context) bool {
 	req.signature = signature
 	_ = echostr
 
-	if hasEchoStr {
+	req.MapData = make(map[string]string)
+
+	if c.Request.Method == http.MethodGet {
 		echostr, _ = url.PathUnescape(echostr)
 		src, _ := base64.StdEncoding.DecodeString(echostr)
 		dst := AesDecryptCBC([]byte(src), cb.AESKey)
@@ -48,7 +75,8 @@ func (req *CallbackRequest) parse(cb *Callback, c *gin.Context) bool {
 		msgLen := binary.BigEndian.Uint32(dst[16:])
 		req.RawMsg = string(dst[20 : 20+msgLen])
 		req.ReceiveID = string(dst[20+msgLen:])
-	} else {
+	}
+	if c.Request.Method == http.MethodPost {
 		defer c.Request.Body.Close()
 		data, _ := ioutil.ReadAll(c.Request.Body)
 
@@ -62,6 +90,8 @@ func (req *CallbackRequest) parse(cb *Callback, c *gin.Context) bool {
 		msgLen := binary.BigEndian.Uint32(dst[16:])
 		req.RawMsg = string(dst[20 : 20+msgLen])
 		req.ReceiveID = string(dst[20+msgLen:])
+
+		xml.Unmarshal([]byte(req.RandomStr), req.MapData)
 	}
 	//消息体签名校验	{dev_msg_signature=sha1(sort(token、timestamp、nonce、msg_encrypt))}
 	//TODO:: 之后再实现
