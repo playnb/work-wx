@@ -71,11 +71,12 @@ func (cb *Callback) verifyUrl(c *gin.Context) {
 //接收消息请求
 func (cb *Callback) onMessage(c *gin.Context) {
 	req := &CallbackRequest{}
+	fmt.Println(c.Request.RequestURI)
+
 	if req.parse(cb, c) == false {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, "signature验证失败")
 		return
 	}
-	fmt.Println(c.Request.RequestURI)
 	if cb.OnMessage != nil {
 		cb.OnMessage(c, req)
 	}
