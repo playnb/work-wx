@@ -3,6 +3,7 @@ package work_wx
 import (
 	"encoding/base64"
 	"encoding/binary"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"net/url"
@@ -74,6 +75,7 @@ func (cb *Callback) onMessage(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, "signature验证失败")
 		return
 	}
+	fmt.Println(c.Request.RequestURI)
 	if cb.OnMessage != nil {
 		cb.OnMessage(c, req)
 	}
