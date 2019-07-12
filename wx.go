@@ -2,6 +2,7 @@ package work_wx
 
 import (
 	"errors"
+	"github.com/gin-gonic/gin"
 	"strings"
 	"time"
 )
@@ -53,4 +54,11 @@ func (wx *WorkWx) Message(agentID uint64) *Message {
 	msg.data = &MessageData{}
 	msg.data.AgentID = agentID
 	return msg
+}
+
+func (wx *WorkWx) ListenCallBack(r gin.IRouter, uri string, token string, encodingAESKey string) *Callback {
+	cb := &Callback{}
+	cb.Init(wx, token, encodingAESKey)
+	r.GET(uri, cb.VerifyUrl)
+	return cb
 }
