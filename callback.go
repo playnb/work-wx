@@ -57,7 +57,7 @@ func (req *CallbackRequest) parse(cb *Callback, c *gin.Context) bool {
 	signature, _ := c.GetQuery("msg_signature")
 	timestamp, _ := c.GetQuery("timestamp")
 	nonce, _ := c.GetQuery("nonce")
-	echostr, hasEchoStr := c.GetQuery("echostr")
+	echostr, _ := c.GetQuery("echostr")
 
 	req.nonce = nonce
 	req.Timestamp, _ = strconv.ParseInt(timestamp, 10, 64)
