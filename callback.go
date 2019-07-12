@@ -12,10 +12,24 @@ import (
 	"strconv"
 )
 
-type wxBody struct {
+type wxBodyHead struct {
 	ToUserName string `xml:"ToUserName"`
 	AgentID    string `xml:"AgentID"`
 	Encrypt    string `xml:"Encrypt"`
+}
+
+type wxBody struct {
+	ToUserName   string `xml:"ToUserName"`
+	FromUserName string `xml:"FromUserName"`
+	CreateTime   string `xml:"CreateTime"`
+	MsgType      string `xml:"MsgType"`
+
+	MsgId   string `xml:"MsgId"`
+	AgentID string `xml:"AgentID"`
+
+	PicUrl  string `xml:"PicUrl"`
+	MediaId string `xml:"MediaId"`
+	Content string `xml:"Content"`
 }
 
 type CallbackRequest struct {
@@ -25,32 +39,19 @@ type CallbackRequest struct {
 	RandomStr string
 	RawMsg    string
 	ReceiveID string
+	BodyHead  *wxBodyHead
 	Body      *wxBody
-	MapData   map[string]string
 }
 
 func (req *CallbackRequest) IsText() bool {
-	return req.GetMsgType() == "text"
-}
-
-func (req *CallbackRequest) GetContent() string {
-	if c, ok := req.MapData["Content"]; ok {
-		return c
-	}
-	return ""
+	return req.Body.MsgType == "text"
 }
 func (req *CallbackRequest) GetAgentID() uint64 {
-	if c, ok := req.MapData["AgentID"]; ok {
-		aid, _ := strconv.ParseUint(c, 10, 64)
+	if req.Body != nil {
+		aid, _ := strconv.ParseUint(req.Body.AgentID, 10, 64)
 		return aid
 	}
 	return 0
-}
-func (req *CallbackRequest) GetMsgType() string {
-	if c, ok := req.MapData["MsgType"]; ok {
-		return c
-	}
-	return ""
 }
 
 func (req *CallbackRequest) parse(cb *Callback, c *gin.Context) bool {
@@ -64,7 +65,7 @@ func (req *CallbackRequest) parse(cb *Callback, c *gin.Context) bool {
 	req.signature = signature
 	_ = echostr
 
-	req.MapData = make(map[string]string)
+	req.Body = &wxBody{}
 
 	if c.Request.Method == http.MethodGet {
 		echostr, _ = url.PathUnescape(echostr)
@@ -80,9 +81,9 @@ func (req *CallbackRequest) parse(cb *Callback, c *gin.Context) bool {
 		defer c.Request.Body.Close()
 		data, _ := ioutil.ReadAll(c.Request.Body)
 
-		req.Body = &wxBody{}
-		xml.Unmarshal(data, req.Body)
-		src, _ := base64.StdEncoding.DecodeString(req.Body.Encrypt)
+		req.BodyHead = &wxBodyHead{}
+		xml.Unmarshal(data, req.BodyHead)
+		src, _ := base64.StdEncoding.DecodeString(req.BodyHead.Encrypt)
 		dst := AesDecryptCBC([]byte(src), cb.AESKey)
 		fmt.Println(dst)
 
@@ -91,7 +92,7 @@ func (req *CallbackRequest) parse(cb *Callback, c *gin.Context) bool {
 		req.RawMsg = string(dst[20 : 20+msgLen])
 		req.ReceiveID = string(dst[20+msgLen:])
 
-		xml.Unmarshal([]byte(req.RandomStr), &req.MapData)
+		xml.Unmarshal([]byte(req.RandomStr), &req.Body)
 	}
 	//消息体签名校验	{dev_msg_signature=sha1(sort(token、timestamp、nonce、msg_encrypt))}
 	//TODO:: 之后再实现
