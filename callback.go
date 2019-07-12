@@ -92,7 +92,7 @@ func (req *CallbackRequest) parse(cb *Callback, c *gin.Context) bool {
 		req.RawMsg = string(dst[20 : 20+msgLen])
 		req.ReceiveID = string(dst[20+msgLen:])
 
-		xml.Unmarshal([]byte(req.RandomStr), req.Body)
+		xml.Unmarshal([]byte(req.RawMsg), req.Body)
 	}
 	//消息体签名校验	{dev_msg_signature=sha1(sort(token、timestamp、nonce、msg_encrypt))}
 	//TODO:: 之后再实现
