@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -23,22 +24,27 @@ func (req *CallbackRequest) parse(cb *Callback, c *gin.Context) bool {
 	signature, _ := c.GetQuery("msg_signature")
 	timestamp, _ := c.GetQuery("timestamp")
 	nonce, _ := c.GetQuery("nonce")
-	echostr, _ := c.GetQuery("echostr")
+	echostr, hasEchoStr := c.GetQuery("echostr")
 
 	req.nonce = nonce
 	req.Timestamp, _ = strconv.ParseInt(timestamp, 10, 64)
 	req.signature = signature
 	_ = echostr
 
-	echostr, _ = url.PathUnescape(echostr)
-	src, _ := base64.StdEncoding.DecodeString(echostr)
-	dst := AesDecryptCBC([]byte(src), cb.AESKey)
+	if hasEchoStr {
+		echostr, _ = url.PathUnescape(echostr)
+		src, _ := base64.StdEncoding.DecodeString(echostr)
+		dst := AesDecryptCBC([]byte(src), cb.AESKey)
 
-	req.RandomStr = string(dst[:16])
-	msgLen := binary.BigEndian.Uint32(dst[16:])
-	req.RawMsg = string(dst[20 : 20+msgLen])
-	req.ReceiveID = string(dst[20+msgLen:])
-
+		req.RandomStr = string(dst[:16])
+		msgLen := binary.BigEndian.Uint32(dst[16:])
+		req.RawMsg = string(dst[20 : 20+msgLen])
+		req.ReceiveID = string(dst[20+msgLen:])
+	} else {
+		defer c.Request.Body.Close()
+		data, _ := ioutil.ReadAll(c.Request.Body)
+		fmt.Println(string(data))
+	}
 	//消息体签名校验	{dev_msg_signature=sha1(sort(token、timestamp、nonce、msg_encrypt))}
 	//TODO:: 之后再实现
 	return true
