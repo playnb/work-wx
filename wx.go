@@ -59,6 +59,7 @@ func (wx *WorkWx) Message(agentID uint64) *Message {
 func (wx *WorkWx) ListenCallBack(r gin.IRouter, uri string, token string, encodingAESKey string) *Callback {
 	cb := &Callback{}
 	cb.Init(wx, token, encodingAESKey)
-	r.GET(uri, cb.VerifyUrl)
+	r.GET(uri, cb.verifyUrl)
+	r.POST(uri, cb.onMessage)
 	return cb
 }
