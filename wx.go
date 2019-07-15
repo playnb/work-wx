@@ -47,7 +47,7 @@ func (wx *WorkWx) getAccessToken() {
 	token := &AccessToken{}
 	getJson(getTokenUrl, token)
 	wx.accessToken = token
-	fmt.Printf("拉取微信Token: %v", wx.accessToken)
+	fmt.Printf("拉取微信Token: %v\n", wx.accessToken)
 }
 
 func (wx *WorkWx) Message(agentID uint64) *Message {
