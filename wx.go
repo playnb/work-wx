@@ -29,7 +29,9 @@ func (wx *WorkWx) Init(corpID string, corpSecret string) error {
 		return errors.New(wx.accessToken.ErrMsg)
 	}
 	go func() {
-		t := time.NewTimer(time.Second * time.Duration(wx.accessToken.ExpiresIn/2))
+		expTime := time.Second * time.Duration(wx.accessToken.ExpiresIn*2/3)
+		fmt.Printf("设置定时拉取时间 %ds\n", expTime/time.Second)
+		t := time.NewTicker(expTime)
 		for {
 			select {
 			case <-t.C:
