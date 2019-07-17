@@ -2,6 +2,7 @@ package work_wx
 
 import (
 	"bytes"
+	"fmt"
 	jsoniter "github.com/json-iterator/go"
 	"io/ioutil"
 	"net/http"
@@ -9,11 +10,11 @@ import (
 )
 
 type MessageRet struct {
-	ErrCode      int    `json:"errcode"`
-	ErrMsg       string `json:"errmsg"`
-	invaliduser  string `json:"invaliduser"`  //"userid1|userid2", // 不区分大小写，返回的列表都统一转为小写
-	invalidparty string `json:"invalidparty"` //"partyid1|partyid2",
-	invalidtag   string `json:"invalidtag"`   //"tagid1|tagid2"
+	ErrCode      int    `json:"errcode,omitempty"`
+	ErrMsg       string `json:"errmsg,omitempty"`
+	InvalidUser  string `json:"invaliduser,omitempty"`  //"userid1|userid2", // 不区分大小写，返回的列表都统一转为小写
+	InvalidParty string `json:"invalidparty,omitempty"` //"partyid1|partyid2",
+	InvalidTag   string `json:"invalidtag,omitempty"`   //"tagid1|tagid2"
 }
 
 type Text struct {
@@ -124,9 +125,9 @@ func (m *Message) Send() *MessageRet {
 	ret := &MessageRet{}
 
 	url := `https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=$ACCESS_TOKEN$`
-	url = strings.ReplaceAll(url, "$ACCESS_TOKEN$", m.wx.accessToken.AccessToken)
-	client := &http.Client{}
+	url = strings.ReplaceAll(url, "$ACCESS_TOKEN$", m.wx.AccessToken(m.data.AgentID))
 	body, _ := jsoniter.Marshal(m.data)
+	client := &http.Client{}
 	req, _ := http.NewRequest("POST", url, bytes.NewBuffer([]byte(body)))
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := client.Do(req)
@@ -136,7 +137,13 @@ func (m *Message) Send() *MessageRet {
 		return ret
 	}
 	defer resp.Body.Close()
-	data, _ := ioutil.ReadAll(req.Body)
-	jsoniter.Unmarshal([]byte(data), ret)
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		ret.ErrCode = -2
+		ret.ErrMsg = "读取Body失败"
+		return ret
+	}
+	fmt.Println(string(data))
+	jsoniter.Unmarshal(data, ret)
 	return ret
 }

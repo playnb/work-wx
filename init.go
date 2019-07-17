@@ -16,11 +16,17 @@ func WX() *WorkWx {
 	return _wx
 }
 
-func getJson(url string, ret interface{}) {
+func getJson(url string, ret interface{}) error {
 	client := &http.Client{}
-	req, _ := client.Get(url)
+	req, err := client.Get(url)
+	if err != nil {
+		return err
+	}
 	defer req.Body.Close()
-	body, _ := ioutil.ReadAll(req.Body)
+	body, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		return err
+	}
 	jsoniter.Unmarshal([]byte(body), ret)
+	return nil
 }
-
