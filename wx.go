@@ -8,9 +8,13 @@ import (
 	"time"
 )
 
+type wxErrorRet struct {
+	ErrCode int    `json:"errcode"` //出错返回码，为0表示成功，非0表示调用失败
+	ErrMsg  string `json:"errmsg"`  //返回码提示语
+}
+
 type AccessToken struct {
-	ErrCode     int    `json:"errcode"`      //出错返回码，为0表示成功，非0表示调用失败
-	ErrMsg      string `json:"errmsg"`       //返回码提示语
+	wxErrorRet
 	AccessToken string `json:"access_token"` //获取到的凭证，最长为512字节
 	ExpiresIn   int64  `json:"expires_in"`   //凭证的有效时间（秒）
 }
